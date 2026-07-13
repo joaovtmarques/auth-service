@@ -9,6 +9,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,6 +20,14 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "users")
 public class User {
+
+  public User(UUID id, String name, String phone, String email, String passwordHash) {
+    this.id = id;
+    this.name = name;
+    this.phone = phone;
+    this.email = email;
+    this.passwordHash = passwordHash;
+  }
 
   @EqualsAndHashCode.Include
   @Id

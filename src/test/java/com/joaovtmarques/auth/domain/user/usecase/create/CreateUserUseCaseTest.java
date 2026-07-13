@@ -1,10 +1,11 @@
-package com.joaovtmarques.auth.domain.user.usecase;
+package com.joaovtmarques.auth.domain.user.usecase.create;
 
-import com.joaovtmarques.auth.domain.user.model.User;
-import com.joaovtmarques.auth.domain.user.repository.UserRepository;
-import com.joaovtmarques.auth.domain.user.service.PasswordEncryptor;
-import com.joaovtmarques.auth.domain.user.usecase.create.CreateUserCommand;
-import com.joaovtmarques.auth.domain.user.usecase.create.CreateUserUseCaseImpl;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,9 +14,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import com.joaovtmarques.auth.domain.user.model.User;
+import com.joaovtmarques.auth.domain.user.repository.UserRepository;
+import com.joaovtmarques.auth.domain.user.service.PasswordEncryptor;
 
 @ExtendWith(MockitoExtension.class)
 class CreateUserUseCaseTest {

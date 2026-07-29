@@ -2,8 +2,10 @@ package com.joaovtmarques.auth.domain.user.usecase.authenticate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
@@ -16,6 +18,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.joaovtmarques.auth.domain.user.exception.InvalidCredentialsException;
+import com.joaovtmarques.auth.domain.user.exception.UserNotFoundException;
 import com.joaovtmarques.auth.domain.user.model.User;
 import com.joaovtmarques.auth.domain.user.repository.UserRepository;
 import com.joaovtmarques.auth.domain.user.service.PasswordEncryptor;
@@ -62,6 +66,26 @@ class AuthenticateUserUseCaseTest {
     verify(passwordEncryptor, times(1)).matches("12345678", "hashed_password");
     verify(userRepository, times(1)).findByEmail("example@email.com");
     verify(tokenService, times(1)).generateToken(user.getId().toString());
+  }
+
+  @Test
+  @DisplayName("Should throw UserNotFoundException when user is not found by email")
+  void shouldThrowExceptionWhenUserNotFound() {
+    // Arrange
+    AuthenticateUserCommand command = new AuthenticateUserCommand("nonexistent@email.com", "12345678");
+
+    when(userRepository.findByEmail("nonexistent@email.com")).thenReturn(Optional.empty());
+
+    // Act & Assert
+    assertThrows(UserNotFoundException.class, () -> {
+      authenticateUserUseCase.execute(command);
+    });
+
+    // Verificações: não deve tentar comparar senha nem gerar token se o usuário não
+    // existe
+    verify(userRepository, times(1)).findByEmail("nonexistent@email.com");
+    verifyNoInteractions(passwordEncryptor);
+    verifyNoInteractions(tokenService);
   }
 
 }

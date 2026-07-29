@@ -88,4 +88,25 @@ class AuthenticateUserUseCaseTest {
     verifyNoInteractions(tokenService);
   }
 
+  @Test
+  @DisplayName("Should throw InvalidCredentialsException when password does not match")
+  void shouldThrowExceptionWhenPasswordIsIncorrect() {
+    // Arrange
+    AuthenticateUserCommand command = new AuthenticateUserCommand("example@email.com", "wrong_password");
+    User user = new User(UUID.randomUUID(), "testname", "110000000000", "example@email.com", "hashed_password");
+
+    when(userRepository.findByEmail("example@email.com")).thenReturn(Optional.of(user));
+    when(passwordEncryptor.matches("wrong_password", "hashed_password")).thenReturn(false);
+
+    // Act & Assert
+    assertThrows(InvalidCredentialsException.class, () -> {
+      authenticateUserUseCase.execute(command);
+    });
+
+    // Verificações: buscou o usuário, validou a senha, mas NÃO deve gerar o token
+    verify(userRepository, times(1)).findByEmail("example@email.com");
+    verify(passwordEncryptor, times(1)).matches("wrong_password", "hashed_password");
+    verifyNoInteractions(tokenService);
+  }
+
 }

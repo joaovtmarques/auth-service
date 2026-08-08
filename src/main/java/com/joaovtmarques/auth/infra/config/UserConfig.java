@@ -15,12 +15,16 @@ import com.joaovtmarques.auth.domain.user.usecase.create.CreateUserUseCaseImpl;
 public class UserConfig {
 
   @Bean
-  CreateUserUseCase createUserUseCase(UserRepository userRepository, PasswordEncryptor passwordEncryptor) {
+  public CreateUserUseCase createUserUseCase(
+      UserRepository userRepository,
+      PasswordEncryptor passwordEncryptor) {
     return new CreateUserUseCaseImpl(userRepository, passwordEncryptor);
   }
 
   @Bean
-  AuthenticateUserUseCase authenticateUserUseCase(UserRepository userRepository, PasswordEncryptor passwordEncryptor,
+  public AuthenticateUserUseCase authenticateUserUseCase(
+      UserRepository userRepository,
+      PasswordEncryptor passwordEncryptor,
       TokenService tokenService) {
     return new AuthenticateUserUseCaseImpl(userRepository, passwordEncryptor, tokenService);
   }

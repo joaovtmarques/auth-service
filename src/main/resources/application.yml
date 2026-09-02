@@ -25,3 +25,7 @@ api:
     token:
       secret: ${JWT_SECRET:pCmUdLQqOiuezLWfNvwZx4mlWmfgHuadifP13iRoJBLoNP7b1AT1yo8OFYVv8aGPaYowOMzrsmbC4s0OmQ6Jt2}
       expiration-hours: ${JWT_EXPIRATION_HOURS:2}
+
+logging:
+  level:
+    org.springframework.security: DEBUG

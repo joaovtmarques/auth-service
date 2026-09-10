@@ -46,8 +46,8 @@ public class UserRepositoryImpl implements UserRepository {
     return new User(
         entity.getId(),
         entity.getName(),
-        entity.getPhone(),
         entity.getEmail(),
+        entity.getPhone(),
         entity.getPasswordHash(),
         entity.getCreatedAt(),
         entity.getUpdatedAt());

@@ -27,8 +27,8 @@ public class RegisterUserController {
   public ResponseEntity<Void> handle(@RequestBody @Valid RegisterUserRequest request) {
     CreateUserCommand command = new CreateUserCommand(
         request.name(),
-        request.phone(),
         request.email(),
+        request.phone(),
         request.password());
 
     createUserUseCase.execute(command);

@@ -28,7 +28,7 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
 
   @Override
   public Optional<RefreshToken> findByTokenHash(String tokenHash) {
-    return springDataRefreshTokenRepository.findByToken(tokenHash)
+    return springDataRefreshTokenRepository.findByTokenHash(tokenHash)
         .map(this::toDomain);
   }
 

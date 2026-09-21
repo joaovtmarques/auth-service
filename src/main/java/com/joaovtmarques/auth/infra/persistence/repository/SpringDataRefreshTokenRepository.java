@@ -9,7 +9,7 @@ import com.joaovtmarques.auth.infra.persistence.entity.RefreshTokenEntity;
 
 public interface SpringDataRefreshTokenRepository extends JpaRepository<RefreshTokenEntity, UUID> {
 
-  Optional<RefreshTokenEntity> findByToken(String token);
+  Optional<RefreshTokenEntity> findByTokenHash(String tokenHash);
 
   void deleteByUserId(UUID userId);
 

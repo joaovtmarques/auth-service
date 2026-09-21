@@ -7,10 +7,10 @@ import com.joaovtmarques.auth.domain.refresh_token.model.RefreshToken;
 
 public interface RefreshTokenRepository {
 
-  Optional<RefreshToken> findById(UUID id);
+  Optional<RefreshToken> findByTokenHash(String tokenHash);
 
-  void save(RefreshToken refreshToken);
+  RefreshToken save(RefreshToken refreshToken);
 
-  void delete(RefreshToken refreshToken);
+  void deleteByUserId(UUID userId);
 
 }

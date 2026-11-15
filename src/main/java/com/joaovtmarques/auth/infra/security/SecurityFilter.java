@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.Collections;
+import java.util.UUID;
 
 @Component
 public class SecurityFilter extends OncePerRequestFilter {
@@ -37,18 +38,21 @@ public class SecurityFilter extends OncePerRequestFilter {
     var token = this.recoverToken(request);
 
     if (token != null) {
-      var email = tokenService.validateToken(token);
+      var subject = tokenService.validateToken(token);
 
-      if (!email.isEmpty()) {
-        userRepository.findByEmail(email).ifPresent(user -> {
-          var authentication = new UsernamePasswordAuthenticationToken(user, null, Collections.emptyList());
-          SecurityContextHolder.getContext().setAuthentication(authentication);
-        });
+      if (!subject.isEmpty()) {
+        try {
+          UUID userId = UUID.fromString(subject);
+          userRepository.findById(userId).ifPresent(user -> {
+            var authentication = new UsernamePasswordAuthenticationToken(user, null, Collections.emptyList());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+          });
+        } catch (IllegalArgumentException ignored) {
+        }
       }
     }
 
     filterChain.doFilter(request, response);
-
   }
 
   private String recoverToken(HttpServletRequest request) {

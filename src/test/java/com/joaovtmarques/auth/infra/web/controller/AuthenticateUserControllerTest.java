@@ -11,6 +11,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.joaovtmarques.auth.domain.refresh_token.exception.InvalidRefreshTokenException;
+import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke.RevokeRefreshTokenCommand;
+import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke.RevokeRefreshTokenUseCase;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenCommand;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenResult;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenUseCase;
@@ -23,6 +25,8 @@ import com.joaovtmarques.auth.infra.web.dto.AuthenticateUserRequest;
 import com.joaovtmarques.auth.infra.web.dto.RefreshTokenRequest;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -50,6 +54,9 @@ class AuthenticateUserControllerTest {
 
   @MockitoBean
   private RotateRefreshTokenUseCase rotateRefreshTokenUseCase;
+
+  @MockitoBean
+  private RevokeRefreshTokenUseCase revokeRefreshTokenUseCase;
 
   @Test
   @DisplayName("Should return 200 OK and token with type Bearer when credentials are valid")
@@ -130,6 +137,32 @@ class AuthenticateUserControllerTest {
     RefreshTokenRequest request = new RefreshTokenRequest("");
 
     mockMvc.perform(post("/auth/refresh")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("Should return 204 No Content on logout")
+  void shouldLogoutSuccessfully() throws Exception {
+    RefreshTokenRequest request = new RefreshTokenRequest("valid-refresh-token");
+
+    doNothing().when(revokeRefreshTokenUseCase).execute(any(RevokeRefreshTokenCommand.class));
+
+    mockMvc.perform(post("/auth/logout")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isNoContent());
+
+    verify(revokeRefreshTokenUseCase).execute(any(RevokeRefreshTokenCommand.class));
+  }
+
+  @Test
+  @DisplayName("Should return 400 Bad Request when logout payload has blank refresh token")
+  void shouldReturn400WhenLogoutPayloadIsInvalid() throws Exception {
+    RefreshTokenRequest request = new RefreshTokenRequest("");
+
+    mockMvc.perform(post("/auth/logout")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isBadRequest());

@@ -10,12 +10,17 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.joaovtmarques.auth.domain.refresh_token.exception.InvalidRefreshTokenException;
+import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenCommand;
+import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenResult;
+import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenUseCase;
 import com.joaovtmarques.auth.domain.user.exception.InvalidCredentialsException;
 import com.joaovtmarques.auth.domain.user.repository.UserRepository;
 import com.joaovtmarques.auth.domain.user.usecase.authenticate.AuthenticateUserCommand;
 import com.joaovtmarques.auth.domain.user.usecase.authenticate.AuthenticateUserUseCase;
 import com.joaovtmarques.auth.infra.security.token.JwtTokenService;
 import com.joaovtmarques.auth.infra.web.dto.AuthenticateUserRequest;
+import com.joaovtmarques.auth.infra.web.dto.RefreshTokenRequest;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -42,6 +47,9 @@ class AuthenticateUserControllerTest {
 
   @MockitoBean
   private AuthenticateUserUseCase authenticateUserUseCase;
+
+  @MockitoBean
+  private RotateRefreshTokenUseCase rotateRefreshTokenUseCase;
 
   @Test
   @DisplayName("Should return 200 OK and token with type Bearer when credentials are valid")
@@ -82,6 +90,48 @@ class AuthenticateUserControllerTest {
     mockMvc.perform(post("/auth/login")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isUnauthorized()); // Ou o status capturado pelo seu GlobalExceptionHandler
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @DisplayName("Should return 200 OK and new token pair when refresh token is valid")
+  void shouldRefreshTokenSuccessfully() throws Exception {
+    RefreshTokenRequest request = new RefreshTokenRequest("valid-refresh-token");
+    RotateRefreshTokenResult result = new RotateRefreshTokenResult("new-access-token", "new-refresh-token");
+
+    when(rotateRefreshTokenUseCase.execute(any(RotateRefreshTokenCommand.class))).thenReturn(result);
+
+    mockMvc.perform(post("/auth/refresh")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.accessToken").value("new-access-token"))
+        .andExpect(jsonPath("$.refreshToken").value("new-refresh-token"))
+        .andExpect(jsonPath("$.tokenType").value("Bearer"));
+  }
+
+  @Test
+  @DisplayName("Should return 401 Unauthorized when refresh token is invalid or reused")
+  void shouldReturnUnauthorizedWhenRefreshTokenIsInvalid() throws Exception {
+    RefreshTokenRequest request = new RefreshTokenRequest("revoked-or-invalid-token");
+
+    when(rotateRefreshTokenUseCase.execute(any(RotateRefreshTokenCommand.class)))
+        .thenThrow(new InvalidRefreshTokenException("Invalid or reused refresh token"));
+
+    mockMvc.perform(post("/auth/refresh")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @DisplayName("Should return 400 Bad Request when refresh token payload is blank")
+  void shouldReturn400WhenRefreshPayloadIsInvalid() throws Exception {
+    RefreshTokenRequest request = new RefreshTokenRequest("");
+
+    mockMvc.perform(post("/auth/refresh")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
   }
 }

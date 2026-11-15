@@ -1,29 +1,5 @@
 package com.joaovtmarques.auth.infra.web.controller;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.joaovtmarques.auth.domain.refresh_token.exception.InvalidRefreshTokenException;
-import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke.RevokeRefreshTokenCommand;
-import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke.RevokeRefreshTokenUseCase;
-import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenCommand;
-import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenResult;
-import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenUseCase;
-import com.joaovtmarques.auth.domain.user.exception.InvalidCredentialsException;
-import com.joaovtmarques.auth.domain.user.repository.UserRepository;
-import com.joaovtmarques.auth.domain.user.usecase.authenticate.AuthenticateUserCommand;
-import com.joaovtmarques.auth.domain.user.usecase.authenticate.AuthenticateUserUseCase;
-import com.joaovtmarques.auth.infra.security.token.JwtTokenService;
-import com.joaovtmarques.auth.infra.web.dto.AuthenticateUserRequest;
-import com.joaovtmarques.auth.infra.web.dto.RefreshTokenRequest;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
@@ -31,6 +7,37 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.Collections;
+import java.util.UUID;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.joaovtmarques.auth.domain.refresh_token.exception.InvalidRefreshTokenException;
+import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke.RevokeRefreshTokenCommand;
+import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke.RevokeRefreshTokenUseCase;
+import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke_all.RevokeAllRefreshTokensCommand;
+import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke_all.RevokeAllRefreshTokensUseCase;
+import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenCommand;
+import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenResult;
+import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenUseCase;
+import com.joaovtmarques.auth.domain.user.exception.InvalidCredentialsException;
+import com.joaovtmarques.auth.domain.user.model.User;
+import com.joaovtmarques.auth.domain.user.repository.UserRepository;
+import com.joaovtmarques.auth.domain.user.usecase.authenticate.AuthenticateUserCommand;
+import com.joaovtmarques.auth.domain.user.usecase.authenticate.AuthenticateUserUseCase;
+import com.joaovtmarques.auth.infra.security.token.JwtTokenService;
+import com.joaovtmarques.auth.infra.web.dto.AuthenticateUserRequest;
+import com.joaovtmarques.auth.infra.web.dto.RefreshTokenRequest;
 
 @WebMvcTest(AuthenticateUserController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -57,6 +64,9 @@ class AuthenticateUserControllerTest {
 
   @MockitoBean
   private RevokeRefreshTokenUseCase revokeRefreshTokenUseCase;
+
+  @MockitoBean
+  private RevokeAllRefreshTokensUseCase revokeAllRefreshTokensUseCase;
 
   @Test
   @DisplayName("Should return 200 OK and token with type Bearer when credentials are valid")
@@ -166,5 +176,29 @@ class AuthenticateUserControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("Should return 204 No Content on logout-all when authenticated")
+  void shouldLogoutAllSuccessfullyWhenAuthenticated() throws Exception {
+    UUID userId = UUID.randomUUID();
+    User authenticatedUser = new User();
+    authenticatedUser.setId(userId);
+
+    var auth = new UsernamePasswordAuthenticationToken(authenticatedUser, null, Collections.emptyList());
+    doNothing().when(revokeAllRefreshTokensUseCase).execute(any(RevokeAllRefreshTokensCommand.class));
+
+    mockMvc.perform(post("/auth/logout-all")
+        .principal(auth))
+        .andExpect(status().isNoContent());
+
+    verify(revokeAllRefreshTokensUseCase).execute(new RevokeAllRefreshTokensCommand(userId));
+  }
+
+  @Test
+  @DisplayName("Should deny access on logout-all when unauthenticated")
+  void shouldReturnUnauthorizedWhenLogoutAllIsUnauthenticated() throws Exception {
+    mockMvc.perform(post("/auth/logout-all"))
+        .andExpect(status().isUnauthorized());
   }
 }

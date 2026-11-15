@@ -1,11 +1,13 @@
 package com.joaovtmarques.auth.infra.web.exception;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.joaovtmarques.auth.domain.refresh_token.exception.InvalidRefreshTokenException;
 import com.joaovtmarques.auth.domain.user.exception.InvalidCredentialsException;
 import com.joaovtmarques.auth.domain.user.exception.UserAlreadyExistsException;
 import com.joaovtmarques.auth.domain.user.exception.UserNotFoundException;
@@ -67,5 +69,12 @@ public class GlobalExceptionHandler {
         HttpStatus.INTERNAL_SERVER_ERROR.value(),
         System.currentTimeMillis());
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+  }
+
+  @ExceptionHandler(InvalidRefreshTokenException.class)
+  public ResponseEntity<ProblemDetail> handleInvalidRefreshToken(InvalidRefreshTokenException ex) {
+    ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    problemDetail.setTitle("Invalid Refresh Token");
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
   }
 }

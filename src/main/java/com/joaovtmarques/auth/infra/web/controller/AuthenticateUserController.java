@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke.RevokeRefreshTokenCommand;
+import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke.RevokeRefreshTokenUseCase;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenCommand;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenResult;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenUseCase;
@@ -25,11 +27,13 @@ public class AuthenticateUserController {
 
   private final AuthenticateUserUseCase authenticateUserUseCase;
   private final RotateRefreshTokenUseCase rotateRefreshTokenUseCase;
+  private final RevokeRefreshTokenUseCase revokeRefreshTokenUseCase;
 
   public AuthenticateUserController(AuthenticateUserUseCase authenticateUserUseCase,
-      RotateRefreshTokenUseCase rotateRefreshTokenUseCase) {
+      RotateRefreshTokenUseCase rotateRefreshTokenUseCase, RevokeRefreshTokenUseCase revokeRefreshTokenUseCase) {
     this.authenticateUserUseCase = authenticateUserUseCase;
     this.rotateRefreshTokenUseCase = rotateRefreshTokenUseCase;
+    this.revokeRefreshTokenUseCase = revokeRefreshTokenUseCase;
   }
 
   @PostMapping("/login")
@@ -60,6 +64,12 @@ public class AuthenticateUserController {
     return ResponseEntity.ok(new RefreshTokenResponse(
         result.accessToken(),
         result.refreshToken()));
+  }
+
+  @PostMapping("/logout")
+  public ResponseEntity<Void> logout(@RequestBody @Valid RefreshTokenRequest body) {
+    revokeRefreshTokenUseCase.execute(new RevokeRefreshTokenCommand(body.refreshToken()));
+    return ResponseEntity.noContent().build();
   }
 
 }

@@ -7,6 +7,8 @@ import com.joaovtmarques.auth.domain.common.service.HashService;
 import com.joaovtmarques.auth.domain.refresh_token.repository.RefreshTokenRepository;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.create.CreateRefreshTokenUseCase;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.create.CreateRefreshTokenUseCaseImpl;
+import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke.RevokeRefreshTokenUseCase;
+import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke.RevokeRefreshTokenUseCaseImpl;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenUseCase;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenUseCaseImpl;
 import com.joaovtmarques.auth.domain.user.repository.UserRepository;
@@ -53,5 +55,12 @@ public class UserConfig {
         hashService,
         tokenService,
         createRefreshTokenUseCase);
+  }
+
+  @Bean
+  RevokeRefreshTokenUseCase revokeRefreshTokenUseCase(
+      RefreshTokenRepository refreshTokenRepository,
+      HashService hashService) {
+    return new RevokeRefreshTokenUseCaseImpl(refreshTokenRepository, hashService);
   }
 }

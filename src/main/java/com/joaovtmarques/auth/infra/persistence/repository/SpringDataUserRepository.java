@@ -11,4 +11,6 @@ public interface SpringDataUserRepository extends JpaRepository<UserEntity, UUID
 
   Optional<UserEntity> findByEmail(String email);
 
+  long countByRolesName(String name);
+
 }

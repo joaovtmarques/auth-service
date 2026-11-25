@@ -35,13 +35,18 @@ public class MasterAdminSeeder implements CommandLineRunner {
   @Override
   public void run(String... args) {
     Role masterRole = roleRepository.findByName("AUTH_MASTER")
-        .orElseGet(() -> roleRepository.save(
-            Role.create("AUTH_MASTER", "Master administrator for role and access management")));
+        .orElseGet(() -> {
+          Role role = new Role();
+          role.setName("AUTH_MASTER");
+          role.setDescription("System Master Administrator");
+          return roleRepository.save(role);
+        });
 
     if (userRepository.findByEmail(masterEmail).isEmpty()) {
       User masterUser = new User();
       masterUser.setName("Master Admin");
       masterUser.setEmail(masterEmail);
+      masterUser.setPhone("00000000000");
       masterUser.setPasswordHash(passwordEncryptor.encrypt(masterPassword));
       masterUser.assignRole(masterRole);
       userRepository.save(masterUser);

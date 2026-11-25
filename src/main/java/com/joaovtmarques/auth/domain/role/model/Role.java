@@ -22,7 +22,7 @@ public class Role {
 
   public static Role create(String name, String description) {
     return new Role(
-        UUID.randomUUID(),
+        null,
         normalizeName(name),
         description,
         Instant.now());

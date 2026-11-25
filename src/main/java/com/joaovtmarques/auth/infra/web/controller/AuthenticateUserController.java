@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.joaovtmarques.auth.domain.refresh_token.usecase.create.CreateRefreshTokenCommand;
+import com.joaovtmarques.auth.domain.refresh_token.usecase.create.CreateRefreshTokenUseCase;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke.RevokeRefreshTokenCommand;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke.RevokeRefreshTokenUseCase;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke_all.RevokeAllRefreshTokensCommand;
@@ -20,7 +22,7 @@ import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshT
 import com.joaovtmarques.auth.domain.user.model.User;
 import com.joaovtmarques.auth.domain.user.usecase.authenticate.AuthenticateUserCommand;
 import com.joaovtmarques.auth.domain.user.usecase.authenticate.AuthenticateUserUseCase;
-import com.joaovtmarques.auth.infra.web.dto.AuthResponse;
+import com.joaovtmarques.auth.infra.security.token.JwtTokenService;
 import com.joaovtmarques.auth.infra.web.dto.AuthenticateUserRequest;
 import com.joaovtmarques.auth.infra.web.dto.RefreshTokenRequest;
 import com.joaovtmarques.auth.infra.web.dto.RefreshTokenResponse;
@@ -33,27 +35,45 @@ import jakarta.validation.Valid;
 public class AuthenticateUserController {
 
   private final AuthenticateUserUseCase authenticateUserUseCase;
+  private final CreateRefreshTokenUseCase createRefreshTokenUseCase;
   private final RotateRefreshTokenUseCase rotateRefreshTokenUseCase;
   private final RevokeRefreshTokenUseCase revokeRefreshTokenUseCase;
   private final RevokeAllRefreshTokensUseCase revokeAllRefreshTokensUseCase;
+  private final JwtTokenService jwtTokenService;
 
-  public AuthenticateUserController(AuthenticateUserUseCase authenticateUserUseCase,
-      RotateRefreshTokenUseCase rotateRefreshTokenUseCase, RevokeRefreshTokenUseCase revokeRefreshTokenUseCase,
-      RevokeAllRefreshTokensUseCase revokeAllRefreshTokensUseCase) {
+  public AuthenticateUserController(
+      AuthenticateUserUseCase authenticateUserUseCase,
+      CreateRefreshTokenUseCase createRefreshTokenUseCase,
+      RotateRefreshTokenUseCase rotateRefreshTokenUseCase,
+      RevokeRefreshTokenUseCase revokeRefreshTokenUseCase,
+      RevokeAllRefreshTokensUseCase revokeAllRefreshTokensUseCase,
+      JwtTokenService jwtTokenService) {
     this.authenticateUserUseCase = authenticateUserUseCase;
+    this.createRefreshTokenUseCase = createRefreshTokenUseCase;
     this.rotateRefreshTokenUseCase = rotateRefreshTokenUseCase;
     this.revokeRefreshTokenUseCase = revokeRefreshTokenUseCase;
     this.revokeAllRefreshTokensUseCase = revokeAllRefreshTokensUseCase;
+    this.jwtTokenService = jwtTokenService;
   }
 
   @PostMapping("/login")
-  public ResponseEntity<AuthResponse> handle(@RequestBody @Valid AuthenticateUserRequest request) {
+  public ResponseEntity<RefreshTokenResponse> handle(
+      @RequestBody @Valid AuthenticateUserRequest request,
+      HttpServletRequest httpRequest) {
+
     AuthenticateUserCommand command = new AuthenticateUserCommand(
         request.email(),
         request.password());
 
-    String token = authenticateUserUseCase.execute(command);
-    return ResponseEntity.ok(new AuthResponse(token));
+    String accessToken = authenticateUserUseCase.execute(command);
+    UUID userId = UUID.fromString(jwtTokenService.validateToken(accessToken));
+
+    String refreshToken = createRefreshTokenUseCase.execute(new CreateRefreshTokenCommand(
+        userId,
+        httpRequest.getRemoteAddr(),
+        httpRequest.getHeader("User-Agent")));
+
+    return ResponseEntity.ok(new RefreshTokenResponse(accessToken, refreshToken));
   }
 
   @PostMapping("/refresh")

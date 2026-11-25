@@ -2,6 +2,8 @@ package com.joaovtmarques.auth.infra.security.token;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -22,12 +24,13 @@ public class JwtTokenService implements TokenService {
   private long expirationMinutes;
 
   @Override
-  public String generateToken(String userId) {
+  public String generateToken(String userId, List<String> roles) {
     try {
       Algorithm algorithm = Algorithm.HMAC256(secret);
       return JWT.create()
           .withIssuer("auth-service")
           .withSubject(userId)
+          .withClaim("roles", roles != null ? roles : Collections.emptyList())
           .withExpiresAt(genExpirationDate())
           .sign(algorithm);
     } catch (JWTCreationException exception) {

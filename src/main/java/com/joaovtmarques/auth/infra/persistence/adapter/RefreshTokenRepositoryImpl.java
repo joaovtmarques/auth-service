@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.joaovtmarques.auth.domain.refresh_token.model.RefreshToken;
 import com.joaovtmarques.auth.domain.refresh_token.repository.RefreshTokenRepository;
@@ -33,6 +34,7 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
   }
 
   @Override
+  @Transactional
   public void deleteByUserId(UUID userId) {
     springDataRefreshTokenRepository.deleteByUserId(userId);
   }

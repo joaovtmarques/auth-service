@@ -1,8 +1,10 @@
 package com.joaovtmarques.auth.infra.security;
 
 import java.io.IOException;
+import java.util.UUID;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -14,9 +16,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import java.util.Collections;
-import java.util.UUID;
 
 @Component
 public class SecurityFilter extends OncePerRequestFilter {
@@ -44,7 +43,11 @@ public class SecurityFilter extends OncePerRequestFilter {
         try {
           UUID userId = UUID.fromString(subject);
           userRepository.findById(userId).ifPresent(user -> {
-            var authentication = new UsernamePasswordAuthenticationToken(user, null, Collections.emptyList());
+            var authorities = user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+                .toList();
+
+            var authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);
           });
         } catch (IllegalArgumentException ignored) {

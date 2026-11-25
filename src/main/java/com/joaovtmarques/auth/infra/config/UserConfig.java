@@ -13,6 +13,15 @@ import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke_all.RevokeAllR
 import com.joaovtmarques.auth.domain.refresh_token.usecase.revoke_all.RevokeAllRefreshTokensUseCaseImpl;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenUseCase;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.rotate.RotateRefreshTokenUseCaseImpl;
+import com.joaovtmarques.auth.domain.role.repository.RoleRepository;
+import com.joaovtmarques.auth.domain.role.usecase.assign.AssignRoleToUserUseCase;
+import com.joaovtmarques.auth.domain.role.usecase.assign.AssignRoleToUserUseCaseImpl;
+import com.joaovtmarques.auth.domain.role.usecase.create.CreateRoleUseCase;
+import com.joaovtmarques.auth.domain.role.usecase.create.CreateRoleUseCaseImpl;
+import com.joaovtmarques.auth.domain.role.usecase.list.ListRolesUseCase;
+import com.joaovtmarques.auth.domain.role.usecase.list.ListRolesUseCaseImpl;
+import com.joaovtmarques.auth.domain.role.usecase.remove.RemoveRoleFromUserUseCase;
+import com.joaovtmarques.auth.domain.role.usecase.remove.RemoveRoleFromUserUseCaseImpl;
 import com.joaovtmarques.auth.domain.user.repository.UserRepository;
 import com.joaovtmarques.auth.domain.user.service.PasswordEncryptor;
 import com.joaovtmarques.auth.domain.user.service.TokenService;
@@ -49,11 +58,13 @@ public class UserConfig {
   @Bean
   RotateRefreshTokenUseCase rotateRefreshTokenUseCase(
       RefreshTokenRepository refreshTokenRepository,
+      UserRepository userRepository,
       HashService hashService,
       TokenService tokenService,
       CreateRefreshTokenUseCase createRefreshTokenUseCase) {
     return new RotateRefreshTokenUseCaseImpl(
         refreshTokenRepository,
+        userRepository,
         hashService,
         tokenService,
         createRefreshTokenUseCase);
@@ -70,5 +81,26 @@ public class UserConfig {
   RevokeAllRefreshTokensUseCase revokeAllRefreshTokensUseCase(
       RefreshTokenRepository refreshTokenRepository) {
     return new RevokeAllRefreshTokensUseCaseImpl(refreshTokenRepository);
+  }
+
+  @Bean
+  public CreateRoleUseCase createRoleUseCase(RoleRepository roleRepository) {
+    return new CreateRoleUseCaseImpl(roleRepository);
+  }
+
+  @Bean
+  public ListRolesUseCase listRolesUseCase(RoleRepository roleRepository) {
+    return new ListRolesUseCaseImpl(roleRepository);
+  }
+
+  @Bean
+  AssignRoleToUserUseCase assignRoleToUserUseCase(
+      UserRepository userRepository, RoleRepository roleRepository) {
+    return new AssignRoleToUserUseCaseImpl(roleRepository, userRepository);
+  }
+
+  @Bean
+  RemoveRoleFromUserUseCase removeRoleFromUserUseCase(UserRepository userRepository, RoleRepository roleRepository) {
+    return new RemoveRoleFromUserUseCaseImpl(roleRepository, userRepository);
   }
 }

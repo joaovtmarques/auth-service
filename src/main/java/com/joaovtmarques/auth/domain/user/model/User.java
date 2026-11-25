@@ -1,8 +1,12 @@
 package com.joaovtmarques.auth.domain.user.model;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+
+import com.joaovtmarques.auth.domain.role.model.Role;
 
 public class User {
 
@@ -13,6 +17,7 @@ public class User {
   private String passwordHash;
   private Instant createdAt;
   private Instant updatedAt;
+  private Set<Role> roles = new HashSet<>();
 
   public User() {
   }
@@ -90,6 +95,25 @@ public class User {
 
   public void setUpdatedAt(Instant updatedAt) {
     this.updatedAt = updatedAt;
+  }
+
+  public Set<Role> getRoles() {
+    return roles;
+  }
+
+  public void setRoles(Set<Role> roles) {
+    this.roles = roles != null ? roles : new HashSet<>();
+  }
+
+  public void assignRole(Role role) {
+    this.roles.add(role);
+  }
+
+  public void removeRole(String roleName) {
+    if (roleName != null) {
+      String normalized = roleName.trim().toUpperCase();
+      this.roles.removeIf(r -> r.getName().equals(normalized));
+    }
   }
 
   @Override

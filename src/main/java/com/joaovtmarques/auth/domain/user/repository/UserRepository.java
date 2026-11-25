@@ -13,4 +13,6 @@ public interface UserRepository {
 
   Optional<User> findById(UUID userId);
 
+  long countByRoleName(String roleName);
+
 }

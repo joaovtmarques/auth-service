@@ -1,40 +1,43 @@
 package com.joaovtmarques.auth.domain.user.usecase.authenticate;
 
-import java.util.Optional;
+import java.util.List;
 
+import com.joaovtmarques.auth.domain.role.model.Role;
 import com.joaovtmarques.auth.domain.user.exception.InvalidCredentialsException;
 import com.joaovtmarques.auth.domain.user.exception.UserNotFoundException;
 import com.joaovtmarques.auth.domain.user.model.User;
 import com.joaovtmarques.auth.domain.user.repository.UserRepository;
-import com.joaovtmarques.auth.domain.user.service.TokenService;
 import com.joaovtmarques.auth.domain.user.service.PasswordEncryptor;
+import com.joaovtmarques.auth.domain.user.service.TokenService;
 
 public class AuthenticateUserUseCaseImpl implements AuthenticateUserUseCase {
 
   private final UserRepository userRepository;
   private final PasswordEncryptor passwordEncryptor;
-  private final TokenService generateToken;
+  private final TokenService tokenService;
 
-  public AuthenticateUserUseCaseImpl(UserRepository userRepository, PasswordEncryptor passwordEncryptor,
-      TokenService generateToken) {
+  public AuthenticateUserUseCaseImpl(
+      UserRepository userRepository,
+      PasswordEncryptor passwordEncryptor,
+      TokenService tokenService) {
     this.userRepository = userRepository;
     this.passwordEncryptor = passwordEncryptor;
-    this.generateToken = generateToken;
+    this.tokenService = tokenService;
   }
 
   @Override
   public String execute(AuthenticateUserCommand command) {
-    Optional<User> user = userRepository.findByEmail(command.email());
-    if (!user.isPresent()) {
-      throw new UserNotFoundException("User not found");
-    }
-    if (!passwordEncryptor.matches(command.password(), user.get().getPasswordHash())) {
+    User user = userRepository.findByEmail(command.email())
+        .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+    if (!passwordEncryptor.matches(command.password(), user.getPasswordHash())) {
       throw new InvalidCredentialsException("Invalid e-mail or password");
     }
 
-    String token = generateToken.generateToken(user.get().getId().toString());
+    List<String> roles = user.getRoles().stream()
+        .map(Role::getName)
+        .toList();
 
-    return token;
+    return tokenService.generateToken(user.getId().toString(), roles);
   }
-
 }

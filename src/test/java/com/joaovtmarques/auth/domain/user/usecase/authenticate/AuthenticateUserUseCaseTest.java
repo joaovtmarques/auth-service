@@ -8,6 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.joaovtmarques.auth.domain.role.model.Role;
 import com.joaovtmarques.auth.domain.user.exception.InvalidCredentialsException;
 import com.joaovtmarques.auth.domain.user.exception.UserNotFoundException;
 import com.joaovtmarques.auth.domain.user.model.User;
@@ -47,25 +50,26 @@ class AuthenticateUserUseCaseTest {
   @Test
   @DisplayName("Should authenticate a user successfully")
   void sholdAuthenticateUserSuccessfully() {
-
     // Arrange
     AuthenticateUserCommand command = new AuthenticateUserCommand("example@email.com", "12345678");
 
     User user = new User(new UUID(1, 1), "testname", "110000000000", "example@email.com", "hashed_password");
+    Role role = new Role(UUID.randomUUID(), "COMUM", "Basic user", Instant.now());
+    user.assignRole(role);
 
     when(userRepository.findByEmail("example@email.com")).thenReturn(Optional.of(user));
     when(passwordEncryptor.matches("12345678", "hashed_password")).thenReturn(true);
-    when(tokenService.generateToken(user.getId().toString())).thenReturn("valid_jwt_token");
+    when(tokenService.generateToken(user.getId().toString(), List.of("COMUM"))).thenReturn("valid_jwt_token");
 
     // Act
     String result = authenticateUserUseCase.execute(command);
 
     // Assert
     assertNotNull(result);
-    assertEquals(result, "valid_jwt_token");
+    assertEquals("valid_jwt_token", result);
     verify(passwordEncryptor, times(1)).matches("12345678", "hashed_password");
     verify(userRepository, times(1)).findByEmail("example@email.com");
-    verify(tokenService, times(1)).generateToken(user.getId().toString());
+    verify(tokenService, times(1)).generateToken(user.getId().toString(), List.of("COMUM"));
   }
 
   @Test
@@ -81,8 +85,6 @@ class AuthenticateUserUseCaseTest {
       authenticateUserUseCase.execute(command);
     });
 
-    // Verificações: não deve tentar comparar senha nem gerar token se o usuário não
-    // existe
     verify(userRepository, times(1)).findByEmail("nonexistent@email.com");
     verifyNoInteractions(passwordEncryptor);
     verifyNoInteractions(tokenService);
@@ -103,10 +105,8 @@ class AuthenticateUserUseCaseTest {
       authenticateUserUseCase.execute(command);
     });
 
-    // Verificações: buscou o usuário, validou a senha, mas NÃO deve gerar o token
     verify(userRepository, times(1)).findByEmail("example@email.com");
     verify(passwordEncryptor, times(1)).matches("wrong_password", "hashed_password");
     verifyNoInteractions(tokenService);
   }
-
 }

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,6 +24,9 @@ import com.joaovtmarques.auth.domain.refresh_token.model.RefreshToken;
 import com.joaovtmarques.auth.domain.refresh_token.repository.RefreshTokenRepository;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.create.CreateRefreshTokenCommand;
 import com.joaovtmarques.auth.domain.refresh_token.usecase.create.CreateRefreshTokenUseCase;
+import com.joaovtmarques.auth.domain.role.model.Role;
+import com.joaovtmarques.auth.domain.user.model.User;
+import com.joaovtmarques.auth.domain.user.repository.UserRepository;
 import com.joaovtmarques.auth.domain.user.service.TokenService;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,6 +43,9 @@ class RotateRefreshTokenUseCaseImplTest {
 
   @Mock
   private CreateRefreshTokenUseCase createRefreshTokenUseCase;
+
+  @Mock
+  private UserRepository userRepository;
 
   @InjectMocks
   private RotateRefreshTokenUseCaseImpl useCase;
@@ -66,15 +73,27 @@ class RotateRefreshTokenUseCaseImplTest {
     activeToken.setExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
     activeToken.setRevokedAt(null);
 
+    Role role = new Role(UUID.randomUUID(), "COMUM", "Basic user", Instant.now());
+    User user = new User(
+        userId,
+        "Test User",
+        "test@email.com",
+        "11999999999",
+        "hashed-password",
+        Instant.now(),
+        Instant.now());
+    user.assignRole(role);
+
     String newRawToken = "new-plain-refresh-token";
     String newHashedToken = "hashed-new-token";
     String newAccessToken = "new-jwt-access-token";
 
     when(hashService.hash(rawOldToken)).thenReturn(hashedOldToken);
     when(refreshTokenRepository.findByTokenHash(hashedOldToken)).thenReturn(Optional.of(activeToken));
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(createRefreshTokenUseCase.execute(any(CreateRefreshTokenCommand.class))).thenReturn(newRawToken);
     when(hashService.hash(newRawToken)).thenReturn(newHashedToken);
-    when(tokenService.generateToken(userId.toString())).thenReturn(newAccessToken);
+    when(tokenService.generateToken(userId.toString(), List.of("COMUM"))).thenReturn(newAccessToken);
 
     RotateRefreshTokenResult result = useCase.execute(command);
 
@@ -98,6 +117,7 @@ class RotateRefreshTokenUseCaseImplTest {
 
     verify(refreshTokenRepository, never()).save(any());
     verify(createRefreshTokenUseCase, never()).execute(any());
+    verifyNoInteractions(userRepository);
   }
 
   @Test
@@ -117,7 +137,8 @@ class RotateRefreshTokenUseCaseImplTest {
 
     verify(refreshTokenRepository).deleteByUserId(userId);
     verify(createRefreshTokenUseCase, never()).execute(any());
-    verify(tokenService, never()).generateToken(any());
+    verify(tokenService, never()).generateToken(any(), anyList());
+    verifyNoInteractions(userRepository);
   }
 
   @Test
@@ -127,7 +148,7 @@ class RotateRefreshTokenUseCaseImplTest {
     expiredToken.setId(UUID.randomUUID());
     expiredToken.setUserId(userId);
     expiredToken.setTokenHash(hashedOldToken);
-    expiredToken.setExpiresAt(Instant.now().minus(1, ChronoUnit.MINUTES)); // Expirado
+    expiredToken.setExpiresAt(Instant.now().minus(1, ChronoUnit.MINUTES));
     expiredToken.setRevokedAt(null);
 
     when(hashService.hash(rawOldToken)).thenReturn(hashedOldToken);
@@ -138,5 +159,6 @@ class RotateRefreshTokenUseCaseImplTest {
     verify(refreshTokenRepository, never()).save(any());
     verify(refreshTokenRepository, never()).deleteByUserId(any());
     verify(createRefreshTokenUseCase, never()).execute(any());
+    verifyNoInteractions(userRepository);
   }
 }
